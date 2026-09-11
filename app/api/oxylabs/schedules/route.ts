@@ -13,7 +13,7 @@ import type { OxylabsScheduleRow } from "@/lib/supabase/types";
 export const maxDuration = 120;
 
 const SCHEDULE_SOURCE = "oxylabs-sync";
-const HOURLY_CRON = "0 * * * *";
+const DAILY_CRON = "0 3 * * *";
 
 /**
  * Syncs Oxylabs schedules from active sources (AGENTS.md section 18):
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
       if (!existing) {
         logRun("info", SCHEDULE_SOURCE, `creating schedule for ${source.name}`);
-        const schedule = await createSchedule(source.listing_url, HOURLY_CRON);
+        const schedule = await createSchedule(source.listing_url, DAILY_CRON);
         await insertSchedule(source.id, schedule.scheduleId);
         created += 1;
         continue;
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     // Orphan reconciliation: any Oxylabs schedule id not tracked in the DB
     // at all (e.g. its DB row was deleted and later recreated) is stale and
-    // must be deactivated so it stops running -- and billing -- hourly.
+    // must be deactivated so it stops running -- and billing -- daily.
     // Re-fetches stored schedules rather than reusing the snapshot from
     // above the create/reactivate/deactivate loops -- otherwise every
     // schedule just created in this same request would incorrectly look
